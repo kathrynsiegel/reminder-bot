@@ -6,43 +6,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"models"
 	"net/http"
 )
 
 func main() {
 	http.HandleFunc("/webhook", WebhookHandler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-type WebhookData struct {
-	Object string      `json:"object"`
-	Entry  []PageEntry `json:"entry"`
-}
-
-type PageEntry struct {
-	Id        string           `json:"id"`
-	Time      int64            `json:"time"`
-	Messaging []MessagingEvent `json:"messaging"`
-}
-
-type MessagingEvent struct {
-	Sender    *Messager   `json:"sender,omitempty"`
-	Recipient *Messager   `json:"recipient,omitempty"`
-	Timestamp *int64      `json:"timestamp,omitempty"`
-	Optin     *MessageLog `json:"optin,omitempty"`
-	Message   *MessageLog `json:"message,omitempty"`
-	Delivery  *MessageLog `json:"delivery,omitempty"`
-	Postback  *MessageLog `json:"postback,omitempty"`
-}
-
-type Messager struct {
-	Id string `json:"id"`
-}
-
-type MessageLog struct {
-	Mid  *string `json:"mid,omitempty"`
-	Seq  *int64  `json:"seq,omitempty"`
-	Text *string `json:"text,omitempty"`
 }
 
 func WebhookHandler(w http.ResponseWriter, req *http.Request) {
@@ -59,7 +29,7 @@ func WebhookHandler(w http.ResponseWriter, req *http.Request) {
 		break
 	case http.MethodPost:
 		decoder := json.NewDecoder(req.Body)
-		var data WebhookData
+		var data models.WebhookData
 		if err := decoder.Decode(&data); err != nil {
 			panic(err)
 		}
@@ -84,7 +54,7 @@ func WebhookHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func receivedMessage(messageData MessagingEvent) {
+func receivedMessage(messageData models.MessagingEvent) {
 	if messageData.Message.Text != nil {
 		text := *messageData.Message.Text
 		switch text {
@@ -97,23 +67,19 @@ func receivedMessage(messageData MessagingEvent) {
 		case "receipt":
 			break
 		default:
-			sendTextMessage(messageData.Sender.Id, CalculateMessageReply(messageData))
+			sendMessage(messageData.Sender.Id, CalculateMessageReply(messageData))
 		}
 	}
 }
 
-func sendTextMessage(senderId string, text string) {
-	var messageData MessagingEvent
-	messageData.Recipient = &Messager{
+func sendMessage(senderId string, text string) {
+	var messageData models.MessagingEvent
+	messageData.Recipient = &models.Messager{
 		Id: senderId,
 	}
-	messageData.Message = &MessageLog{
+	messageData.Message = &models.MessageLog{
 		Text: &text,
 	}
-	callSendAPI(messageData)
-}
-
-func callSendAPI(messageData MessagingEvent) {
 	url := "https://graph.facebook.com/v2.6/me/messages?access_token=" + PageAccessToken
 	jsonStr, err := json.Marshal(messageData)
 	if err != nil {
