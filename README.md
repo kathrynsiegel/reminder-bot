@@ -6,6 +6,9 @@ To run your own messenger bot, you will need to create a config.go file that con
 ```
 package main
 
-const VerifyToken = [insert]
-const PageAccessToken = [insert]
+const VerifyToken = "[insert]"
+const PageAccessToken = "[insert]"
+const DB_USER = "[insert]"
+const DB_PASSWORD = "[insert]"
+const DB_NAME = "[insert]"
 ```
