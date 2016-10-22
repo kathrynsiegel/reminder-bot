@@ -1,22 +1,36 @@
 package main
 
 import (
-	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"helpers"
 	"log"
 	"models"
 	"net/http"
+
+	_ "github.com/lib/pq"
 )
 
+type App struct {
+	DB *sql.DB
+}
+
 func main() {
-	http.HandleFunc("/webhook", WebhookHandler)
+	dbInfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable",
+		DB_USER, DB_PASSWORD, DB_NAME)
+	db, err := sql.Open("postgres", dbInfo)
+	helpers.PanicIfError(err)
+	defer db.Close()
+	app := App{
+		DB: db,
+	}
+	http.HandleFunc("/webhook", app.WebhookHandler)
 	fmt.Printf("web server running on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func WebhookHandler(w http.ResponseWriter, req *http.Request) {
+func (app App) WebhookHandler(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 		query := req.URL.Query()
@@ -42,7 +56,7 @@ func WebhookHandler(w http.ResponseWriter, req *http.Request) {
 						fmt.Printf("Received optin\n")
 					} else if messagingEvent.Message != nil {
 						fmt.Printf("Received message %s\n", *messagingEvent.Message)
-						receivedMessage(messagingEvent)
+						app.ReceivedMessage(messagingEvent)
 					} else if messagingEvent.Delivery != nil {
 						fmt.Printf("Received delivery %s\n", *messagingEvent.Delivery)
 					} else if messagingEvent.Postback != nil {
@@ -53,46 +67,4 @@ func WebhookHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		w.WriteHeader(http.StatusOK)
 	}
-}
-
-func receivedMessage(messageData models.MessagingEvent) {
-	if messageData.Message.Text != nil {
-		text := *messageData.Message.Text
-		switch text {
-		case "image":
-			break
-		case "button":
-			break
-		case "generic":
-			break
-		case "receipt":
-			break
-		default:
-			sendMessage(messageData.Sender.Id, CalculateMessageReply(messageData))
-		}
-	}
-}
-
-func sendMessage(senderId string, text string) {
-	var messageData models.MessagingEvent
-	messageData.Recipient = &models.Messager{
-		Id: senderId,
-	}
-	messageData.Message = &models.MessageLog{
-		Text: &text,
-	}
-	url := "https://graph.facebook.com/v2.6/me/messages?access_token=" + PageAccessToken
-	jsonStr, err := json.Marshal(messageData)
-	if err != nil {
-		panic(err)
-	}
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
-	req.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-	ioutil.ReadAll(resp.Body)
 }
