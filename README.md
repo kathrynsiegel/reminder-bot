@@ -12,3 +12,5 @@ const DB_USER = "[insert]"
 const DB_PASSWORD = "[insert]"
 const DB_NAME = "[insert]"
 ```
+
+To connect to the postgres DB, run ```sh db.sh``` from the ```src``` directory. To run the app, run ```sh run.sh``` from the ```src``` directory. This will probably change in the future.
