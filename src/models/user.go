@@ -1,37 +1,17 @@
 package models
 
+import "github.com/jinzhu/gorm"
+
+// User represents a row in public.users
 type User struct {
-	Id         int64
-	FacebookId string
+	gorm.Model
+	FacebookID string
 }
 
-type Day int64
-
-const (
-	Sunday Day = iota
-	Monday
-	Tuesday
-	Wednesday
-	Thursday
-	Friday
-	Saturday
-)
-
-type RepeatInterval int64
-
-const (
-	RepeatDaily RepeatInterval = iota
-	RepeatWeekly
-	RepeatMonthly
-)
-
-type Reminder struct {
-	Id                int64
-	UserId            int64
-	Recurring         bool
-	RepeatInterval    RepeatInterval
-	RepeatDay         Day   // Only used for weekly repeats
-	RepeatDayOfMonth  int64 // Only used for monthly repeats
-	RepeatTimeOfDayMs int64 // Time of day
-	RepeatEvery       int64 // Repeat every x days, weeks, months
+// FindUserOrCreate finds a user by FB ID. If user isn't present, then
+// create a new user in the DB.
+func (db *Database) FindUserOrCreate(facebookID string) *User {
+	var user User
+	db.Gorm.FirstOrCreate(&user, User{FacebookID: facebookID})
+	return &user
 }
