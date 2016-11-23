@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"helpers"
@@ -9,28 +8,40 @@ import (
 	"models"
 	"net/http"
 
-	_ "github.com/lib/pq"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
+// App contains all major components of the app.
 type App struct {
-	DB *sql.DB
+	DB models.Database
 }
 
 func main() {
 	dbInfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable",
 		DB_USER, DB_PASSWORD, DB_NAME)
-	db, err := sql.Open("postgres", dbInfo)
+	gormDB, err := gorm.Open("postgres", dbInfo)
 	helpers.PanicIfError(err)
-	defer db.Close()
-	app := App{
-		DB: db,
+	defer gormDB.Close()
+	app := &App{
+		DB: models.Database{Gorm: gormDB},
 	}
+	app.automigrate()
 	http.HandleFunc("/webhook", app.WebhookHandler)
 	fmt.Printf("web server running on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func (app App) WebhookHandler(w http.ResponseWriter, req *http.Request) {
+func (app *App) automigrate() {
+	app.DB.Gorm.AutoMigrate(
+		&models.User{},
+		&models.Reminder{},
+	)
+}
+
+// WebhookHandler handles the endpoint that FB messenger bots must support
+// to verify its identity and to receive messages from users.
+func (app *App) WebhookHandler(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 		query := req.URL.Query()
