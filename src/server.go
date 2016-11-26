@@ -36,6 +36,7 @@ func (app *App) automigrate() {
 	app.DB.Gorm.AutoMigrate(
 		&models.User{},
 		&models.Reminder{},
+		&models.MessageLog{},
 	)
 }
 
