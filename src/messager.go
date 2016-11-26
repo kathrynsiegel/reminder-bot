@@ -42,7 +42,7 @@ func (app *App) SendMessage(senderID string, text string) {
 	messageData.Recipient = &models.Messager{
 		ID: senderID,
 	}
-	messageData.Message = &models.MessageLog{
+	messageData.Message = &models.MessageRecord{
 		Text: &text,
 	}
 	url := "https://graph.facebook.com/v2.6/me/messages?access_token=" + PageAccessToken
@@ -70,14 +70,19 @@ func (app *App) ProcessMessage(messageData models.MessagingEvent) string {
 	if messageData.Message == nil || messageData.Message.Text == nil {
 		return misunderstoodResponse
 	}
+	if messageData.Sender == nil {
+		return ""
+	}
 	attributes, err := app.GetAttributesFromMessage(*messageData.Message.Text)
 	if err != nil {
 		return misunderstoodResponse
 	}
-	response, err := app.GenerateResponse(attributes, messageData.Sender.ID)
-	if err != nil {
-		return misunderstoodResponse
-	}
+	response, success := app.GenerateResponse(attributes, messageData.Sender.ID)
+	app.DB.Gorm.Create(&models.MessageLog{
+		SenderID:     messageData.Sender.ID,
+		Text:         *messageData.Message.Text,
+		ReplySuccess: success,
+	})
 	return response
 }
 
@@ -116,14 +121,14 @@ func (app *App) GetAttributesFromMessage(messageText string) (*models.WitAiRespo
 
 // GenerateResponse uses wit.ai attributes to generate a response to the message
 // sent by the user.
-func (app *App) GenerateResponse(message *models.WitAiResponse, senderID string) (string, error) {
+func (app *App) GenerateResponse(message *models.WitAiResponse, senderID string) (string, bool) {
 	user := app.DB.FindUserOrCreate(senderID)
 	log.Println(spew.Sdump(message))
 	if message.GetAttribute("greeting") != nil {
-		return "Hi! I'm your friendly neighborhood reminder bot. Please ask me to remember something.", nil
+		return "Hi! I'm your friendly neighborhood reminder bot. Please ask me to remember something.", true
 	}
 	if message.GetAttribute("reminder") == nil {
-		return "I'm sorry, you can only ask me for reminders. That doesn't seem to be a reminder. Try 'Remind me to...'", nil
+		return "I'm sorry, you can only ask me for reminders. That doesn't seem to be a reminder. Try 'Remind me to...'", false
 	}
 	newReminder := &models.Reminder{
 		UserID:            user.ID,
@@ -145,7 +150,7 @@ func (app *App) GenerateResponse(message *models.WitAiResponse, senderID string)
 		}
 	}
 	if task == "" {
-		return misunderstoodResponse, nil
+		return misunderstoodResponse, false
 	}
 	newReminder.Description = task
 
@@ -164,7 +169,7 @@ func (app *App) GenerateResponse(message *models.WitAiResponse, senderID string)
 		t, err := time.Parse("2006-01-02T15:04:05.000-07:00", *timeOfDay)
 		log.Println(*timeOfDay)
 		if err != nil {
-			return misunderstoodResponse, nil
+			return misunderstoodResponse, false
 		}
 		newReminder.Timezone = t.Location().String()
 		newReminder.RepeatTimeOfDayMs = helpers.TimeToMs(t)
@@ -173,5 +178,5 @@ func (app *App) GenerateResponse(message *models.WitAiResponse, senderID string)
 	// TODO(Katie) RepeatEvery
 
 	app.DB.Gorm.Create(newReminder)
-	return fmt.Sprintf("Ok! I will remind you to %s.", task[1:len(task)-1]), nil
+	return fmt.Sprintf("Ok! I will remind you to %s.", task[1:len(task)-1]), true
 }
