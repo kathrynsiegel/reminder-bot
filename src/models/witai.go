@@ -18,12 +18,18 @@ type WitAiAttribute struct {
 	Confidence float64 `json:"confidence"`
 }
 
-// HasAttribute determines whether a WitAiResponse has a specified
-// attribute attr with a high confidence (0.75).
-func (resp *WitAiResponse) HasAttribute(attr string) bool {
+// GetAttribute determines whether a WitAiResponse has a specified
+// attribute attr with a high confidence (0.75). It then returns
+// a pointer to the value of that attr.
+func (resp *WitAiResponse) GetAttribute(attr string) *string {
 	attrs, ok := resp.Entities[attr]
-	if !ok || len(attrs) == 0 || attrs[0].Confidence < 0.75 {
-		return false
+	if !ok || len(attrs) == 0 {
+		return nil
 	}
-	return true
+	for _, attr := range attrs {
+		if attr.Confidence >= 0.75 {
+			return &attr.Value
+		}
+	}
+	return nil
 }

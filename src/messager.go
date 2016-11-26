@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"helpers"
 	"io/ioutil"
 	"log"
 	"models"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 )
@@ -116,16 +118,24 @@ func (app *App) GetAttributesFromMessage(messageText string) (*models.WitAiRespo
 // sent by the user.
 func (app *App) GenerateResponse(message *models.WitAiResponse, senderID string) (string, error) {
 	user := app.DB.FindUserOrCreate(senderID)
-	log.Println(spew.Sdump(user))
 	log.Println(spew.Sdump(message))
-	if message.HasAttribute("greeting") {
+	if message.GetAttribute("greeting") != nil {
 		return "Hi! I'm your friendly neighborhood reminder bot. Please ask me to remember something.", nil
 	}
-	if !message.HasAttribute("reminder") {
+	if message.GetAttribute("reminder") == nil {
 		return "I'm sorry, you can only ask me for reminders. That doesn't seem to be a reminder. Try 'Remind me to...'", nil
 	}
+	newReminder := &models.Reminder{
+		UserID:            user.ID,
+		Recurring:         false,
+		RepeatInterval:    models.RepeatDaily,
+		RepeatTimeOfDayMs: 0,
+		RepeatEvery:       1,
+	}
+
+	// Desription of reminder
 	reminderAttributes := message.Entities["reminder"]
-	task := "do that"
+	task := ""
 	for _, reminderAttr := range reminderAttributes {
 		rVal := reminderAttr.Value
 		if strings.Index(strings.ToLower(rVal), "remind") == -1 && rVal != "" {
@@ -134,5 +144,34 @@ func (app *App) GenerateResponse(message *models.WitAiResponse, senderID string)
 			task = strings.Replace(task, " me ", " you ", -1)
 		}
 	}
+	if task == "" {
+		return misunderstoodResponse, nil
+	}
+	newReminder.Description = task
+
+	// Recurrence
+	if message.GetAttribute("recurrence") != nil {
+		newReminder.Recurring = true
+	}
+
+	// TODO(Katie) RepeatInterval
+	// TODO(Katie) RepeatDay
+	// TODO(Katie) RepeatDayOfMonth
+
+	// RepeatTimeOfDayMs and Timezone
+	timeOfDay := message.GetAttribute("datetime")
+	if timeOfDay != nil {
+		t, err := time.Parse("2006-01-02T15:04:05.000-07:00", *timeOfDay)
+		log.Println(*timeOfDay)
+		if err != nil {
+			return misunderstoodResponse, nil
+		}
+		newReminder.Timezone = t.Location().String()
+		newReminder.RepeatTimeOfDayMs = helpers.TimeToMs(t)
+	}
+
+	// TODO(Katie) RepeatEvery
+
+	app.DB.Gorm.Create(newReminder)
 	return fmt.Sprintf("Ok! I will remind you to %s.", task[1:len(task)-1]), nil
 }
