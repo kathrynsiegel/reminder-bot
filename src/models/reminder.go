@@ -30,11 +30,15 @@ const (
 // the bot to remember.
 type Reminder struct {
 	gorm.Model
-	UserID            uint64
+	UserID            uint
 	Recurring         bool
 	RepeatInterval    RepeatInterval
 	RepeatDay         Day   // Only used for weekly repeats
 	RepeatDayOfMonth  int64 // Only used for monthly repeats
 	RepeatTimeOfDayMs int64 // Time of day
 	RepeatEvery       int64 // Repeat every x days, weeks, months
+	Description       string
+	NextSendAtMs      int64
+	LastSendAtMs      int64
+	Timezone          string
 }
