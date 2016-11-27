@@ -14,4 +14,4 @@ const DB_NAME = "[insert]"
 const WitAiServerAccessToken = "[insert]"
 ```
 
-To connect to the postgres DB, run ```sh db.sh``` from the ```src``` directory. To run the app, run ```sh run.sh``` from the ```src``` directory. This will probably change in the future.
+To connect to the postgres DB, run ```sh db.sh``` from the ```src``` directory. To run the app, run ```go run main.go config.go``` from the ```src``` directory.
