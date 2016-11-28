@@ -178,6 +178,8 @@ func (ac *AppController) GenerateResponse(message *models.WitAiResponse, senderI
 
 	// TODO(Katie) RepeatEvery
 
+	newReminder.NextSendAtMs = newReminder.CalculateNextSendAtMs()
+
 	ac.DB.Gorm.Create(newReminder)
 	return fmt.Sprintf("Ok! I will remind you to %s.", task[1:len(task)-1]), true
 }
