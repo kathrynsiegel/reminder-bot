@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/kathrynsiegel/reminder-bot/config"
-	"github.com/kathrynsiegel/reminder-bot/models"
+	"github.com/ktsiegel/reminder-bot/config"
+	"github.com/ktsiegel/reminder-bot/models"
 )
 
 // AppController is the app's main controller, used for receiving

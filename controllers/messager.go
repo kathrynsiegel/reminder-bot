@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/kathrynsiegel/reminder-bot/config"
-	"github.com/kathrynsiegel/reminder-bot/helpers"
-	"github.com/kathrynsiegel/reminder-bot/models"
+	"github.com/ktsiegel/reminder-bot/config"
+	"github.com/ktsiegel/reminder-bot/helpers"
+	"github.com/ktsiegel/reminder-bot/models"
 )
 
 // ReceivedMessage handles messages that are received by the messenger bot.

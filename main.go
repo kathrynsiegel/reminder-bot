@@ -7,10 +7,10 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/kathrynsiegel/reminder-bot/config"
-	"github.com/kathrynsiegel/reminder-bot/controllers"
-	"github.com/kathrynsiegel/reminder-bot/helpers"
-	"github.com/kathrynsiegel/reminder-bot/models"
+	"github.com/ktsiegel/reminder-bot/config"
+	"github.com/ktsiegel/reminder-bot/controllers"
+	"github.com/ktsiegel/reminder-bot/helpers"
+	"github.com/ktsiegel/reminder-bot/models"
 )
 
 // App contains all major components of the app.

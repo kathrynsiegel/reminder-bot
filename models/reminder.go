@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
-	"github.com/kathrynsiegel/reminder-bot/helpers"
+	"github.com/ktsiegel/reminder-bot/helpers"
 )
 
 // RepeatInterval type
